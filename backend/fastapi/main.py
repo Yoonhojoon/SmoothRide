@@ -1,10 +1,11 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, Request
 import requests
 import pandas as pd
 from dotenv import load_dotenv
 import os
 from fastapi.middleware.cors import CORSMiddleware
-
+from fastapi.templating import Jinja2Templates
+from fastapi.responses import HTMLResponse
 
 
 # 환경 변수 로드
@@ -23,6 +24,8 @@ app.add_middleware(
 # 환경 변수 설정 (API Key & URL)
 API_URL = os.getenv("API_URL")
 API_KEY = os.getenv("API_KEY")
+
+templates = Jinja2Templates(directory="templates")
 
 # 🚀 1. CSV 파일 로드하여 노드 & 링크 데이터 매핑 생성
 coord_file_path = "../../data/coord/coord_utf.csv"
@@ -53,6 +56,14 @@ except Exception as e:
     print(f"❌ 데이터 로드 실패: {e}")
     NODE_COORDINATES = {}
     LINK_INFO = {}
+
+@app.get("/", response_class=HTMLResponse)
+def serve_map(request: Request):
+    """
+    기본 경로에 접속했을 때 map.html 반환
+    """
+    return templates.TemplateResponse("map.html", {"request": request})
+
 
 @app.get("/traffic")
 def get_traffic_data():
