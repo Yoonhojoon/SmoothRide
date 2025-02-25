@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <title>실시간 교통 지도</title>
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.10.0/mapbox-gl.js"></script>
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.10.0/mapbox-gl.css" rel="stylesheet">
+    <style>
+        body { margin: 0; padding: 0; }
+        #map { width: 100vw; height: 100vh; }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+
+    <script>
+        // 1. Mapbox API Key 설정
+        mapboxgl.accessToken = "pk.eyJ1IjoiaG9qb29ob2pvbyIsImEiOiJjbTdmbG1hdHIwMHUxMmlweWl1Y3RwbGhhIn0.yrlctaom6KuNafNdzj0INw"; 
+
+        // 2. 지도 생성
+        var map = new mapboxgl.Map({
+            container: "map",
+            style: "mapbox://styles/mapbox/streets-v11",
+            center: [126.9780, 37.5665], // 서울 중심 좌표
+            zoom: 12
+        });
+
+        async function loadTrafficData() {
+            let response = await fetch("http://127.0.0.1:8000/traffic"); // FastAPI에서 GeoJSON 가져오기
+            let geojsonData = await response.json();
+
+            if (map.getSource("traffic")) {
+                map.getSource("traffic").setData(geojsonData);
+            } else {
+                map.addSource("traffic", { type: "geojson", data: geojsonData });
+
+                // 3. 선(LineString) 추가 (도로 연결)
+                map.addLayer({
+                    id: "traffic-lines",
+                    type: "line",
+                    source: "traffic",
+                    paint: {
+                        "line-width": 5,
+                        "line-color": [
+                            "case",
+                            ["<", ["get", "speed"], 15], "#FF0000",  // 속도 15km/h 미만 → 빨간색
+                            ["<", ["get", "speed"], 25], "#FFA500",  // 속도 15~25km/h → 주황색
+                            "#00FF00" // 속도 25km/h 이상 → 초록색
+                        ],
+                        "line-opacity": 0.8
+                    }
+                });
+
+                // 4. 도로 이름 라벨 추가
+                map.addLayer({
+                    id: "traffic-labels",
+                    type: "symbol",
+                    source: "traffic",
+                    layout: {
+                        "symbol-placement": "line",
+                        "text-field": ["get", "roadName"],
+                        "text-font": ["Open Sans Bold", "Arial Unicode MS Bold"],
+                        "text-size": 12,
+                        "text-offset": [0, -1]
+                    },
+                    paint: {
+                        "text-color": "#000000",
+                        "text-halo-color": "#FFFFFF",
+                        "text-halo-width": 1.5
+                    }
+                });
+            }
+        }
+
+        // 5. 지도 로드 후 데이터 불러오기
+        map.on("load", loadTrafficData);
+
+        // 6. 10초마다 실시간 데이터 갱신
+        setInterval(loadTrafficData, 10000);
+    </script>
+</body>
+</html>
