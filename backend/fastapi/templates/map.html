@@ -26,8 +26,12 @@
         });
 
         async function loadTrafficData() {
-            let response = await fetch("http://127.0.0.1:8000/traffic"); // FastAPI에서 GeoJSON 가져오기
+            let configResponse = await fetch("/config");
+            let config = await configResponse.json();
+            let awsUrl = config.aws_url;
+            let response = await fetch(`${awsUrl}/traffic`); // FastAPI에서 GeoJSON 가져오기
             let geojsonData = await response.json();
+
 
             if (map.getSource("traffic")) {
                 map.getSource("traffic").setData(geojsonData);

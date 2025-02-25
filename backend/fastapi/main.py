@@ -29,6 +29,7 @@ templates = Jinja2Templates(directory="templates")
 # 환경 변수 설정
 API_URL = os.getenv("API_URL")
 API_KEY = os.getenv("API_KEY")
+AWS_URL = os.getenv("AWS_URL")
 
 # 🔥 로깅 설정 (파일 + 콘솔)
 logging.basicConfig(
@@ -70,6 +71,7 @@ except Exception as e:
     logger.error(f"❌ 데이터 로드 실패: {e}")
     NODE_COORDINATES = {}
     LINK_INFO = {}
+    
 
 @app.get("/", response_class=HTMLResponse)
 def serve_map(request: Request):
@@ -141,3 +143,8 @@ def get_traffic_data():
     except Exception as e:
         logger.error(f"❌ 교통 데이터 가져오기 실패: {e}")
         return {"error": "Internal server error"}
+
+
+@app.get("/config")
+def get_config():
+    return {"aws_url": AWS_URL}
